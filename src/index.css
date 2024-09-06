@@ -1,0 +1,155 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Lato:wght@400;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-primary: 59 130 246;
+  --color-secondary: 99 102 241;
+  --color-accent: 236 72 153;
+  --color-background: 249 250 251;
+  --color-surface: 255 255 255;
+  --color-text: 31 41 55;
+}
+
+.dark {
+  --color-primary: 96 165 250;
+  --color-secondary: 129 140 248;
+  --color-accent: 244 114 182;
+  --color-background: 17 24 39;
+  --color-surface: 31 41 55;
+  --color-text: 243 244 246;
+}
+
+body {
+  font-family: 'Poppins', sans-serif;
+  @apply bg-background text-text;
+}
+
+.font-report {
+  font-family: 'Lato', 'Calibri', 'Arial', sans-serif;
+}
+
+@layer components {
+  .container {
+    @apply w-full mx-auto px-4 sm:px-6 lg:px-8;
+    max-width: 100%;
+  }
+
+  .card {
+    @apply bg-surface rounded-lg shadow-md overflow-hidden transition-all duration-300 hover:shadow-lg border border-blue-100 dark:border-gray-700;
+  }
+
+  .btn {
+    @apply px-6 py-2 rounded-md font-medium text-white transition-all duration-300 transform hover:translate-y-[-2px] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-background uppercase tracking-wider text-sm shadow-md;
+  }
+
+  .btn-primary {
+    @apply bg-primary hover:bg-blue-600 focus:ring-primary;
+  }
+
+  .btn-secondary {
+    @apply bg-secondary hover:bg-indigo-600 focus:ring-secondary;
+  }
+
+  .input {
+    @apply w-full px-4 py-2 rounded-md border-2 border-blue-200 dark:border-gray-600 bg-surface text-text focus:border-blue-400 dark:focus:border-blue-300 focus:ring focus:ring-blue-200 dark:focus:ring-blue-700 focus:ring-opacity-50 transition-all duration-300 placeholder-gray-400 dark:placeholder-gray-500;
+  }
+
+  .select {
+    @apply w-full px-4 py-2 rounded-md border-2 border-blue-200 dark:border-gray-600 bg-surface text-text focus:border-blue-400 dark:focus:border-blue-300 focus:ring focus:ring-blue-200 dark:focus:ring-blue-700 focus:ring-opacity-50 transition-all duration-300 appearance-none;
+  }
+
+  .question-card {
+    @apply bg-surface rounded-lg shadow-sm p-6 mb-6 transition-all duration-300 hover:shadow-md border-l-4 border-blue-400 dark:border-blue-600;
+    width: 100%;
+    min-width: 300px;
+    overflow-x: auto;
+  }
+
+  .option-card {
+    @apply bg-blue-50 dark:bg-gray-700 rounded-md p-4 mb-3 transition-all duration-300 hover:bg-blue-100 dark:hover:bg-gray-600 border border-blue-200 dark:border-gray-600;
+  }
+
+  .sub-question {
+    @apply ml-6 mt-4 border-l-2 border-indigo-300 dark:border-indigo-600 pl-4;
+  }
+
+  .header {
+    @apply bg-blue-600 dark:bg-gray-800 text-white shadow-md sticky top-0 z-50;
+  }
+
+  .header-content {
+    @apply container mx-auto py-4 flex justify-between items-center;
+  }
+
+  .header-title {
+    @apply text-3xl font-bold;
+  }
+
+  .header-nav {
+    @apply flex space-x-6;
+  }
+
+  .header-link {
+    @apply text-white hover:text-blue-200 dark:hover:text-blue-300 transition-colors duration-300 uppercase tracking-wider text-sm font-medium;
+  }
+
+  .main-title {
+    @apply text-4xl font-bold text-center mb-12 text-gray-800 dark:text-gray-200;
+  }
+
+  .questionnaire-layout {
+    @apply flex flex-wrap;
+  }
+
+  .questionnaire-creator {
+    @apply w-full lg:w-7/12 pr-0 lg:pr-4 mb-8 lg:mb-0;
+  }
+
+  .questionnaire-preview {
+    @apply w-full lg:w-5/12 pl-0 lg:pl-4;
+  }
+
+  /* Nouvelle classe pour le texte des options en mode sombre */
+  .questionnaire-option {
+    @apply text-gray-700 dark:text-white;
+  }
+
+  @media (max-width: 768px) {
+    .questionnaire-layout {
+      @apply flex-col;
+    }
+    
+    .questionnaire-creator,
+    .questionnaire-preview {
+      @apply w-full;
+    }
+  }
+}
+
+u {
+  text-decoration: underline;
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  overflow-y: auto; /* Permet le défilement vertical */
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+}
+
+
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';

@@ -1,0 +1,94 @@
+const express = require('express');
+const router = express.Router();
+const Questionnaire = require('../models/Questionnaire');
+const authMiddleware = require('../middleware/authMiddleware');
+
+// Middleware pour logger les requêtes
+router.use((req, res, next) => {
+  console.log(`${req.method} ${req.url}`);
+  next();
+});
+
+// Obtenir tous les questionnaires de l'utilisateur connecté
+router.get('/', authMiddleware, async (req, res) => {
+  try {
+    const questionnaires = await Questionnaire.find({ user: req.userId });
+    console.log(`Récupération de ${questionnaires.length} questionnaires pour l'utilisateur ${req.userId}`);
+    res.json(questionnaires);
+  } catch (error) {
+    console.error('Erreur lors de la récupération des questionnaires:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Créer un nouveau questionnaire
+router.post('/', authMiddleware, async (req, res) => {
+  console.log('Création d\'un nouveau questionnaire:', JSON.stringify(req.body, null, 2));
+  const questionnaire = new Questionnaire({
+    ...req.body,
+    user: req.userId
+  });
+  try {
+    const newQuestionnaire = await questionnaire.save();
+    console.log('Nouveau questionnaire créé avec l\'ID:', newQuestionnaire._id);
+    res.status(201).json(newQuestionnaire);
+  } catch (error) {
+    console.error('Erreur lors de la création du questionnaire:', error);
+    res.status(400).json({ message: error.message });
+  }
+});
+
+// Obtenir un questionnaire spécifique
+router.get('/:id', authMiddleware, async (req, res) => {
+  try {
+    const questionnaire = await Questionnaire.findOne({ _id: req.params.id, user: req.userId });
+    if (!questionnaire) {
+      console.log(`Questionnaire avec l'ID ${req.params.id} non trouvé pour l'utilisateur ${req.userId}`);
+      return res.status(404).json({ message: 'Questionnaire non trouvé' });
+    }
+    console.log(`Questionnaire ${req.params.id} récupéré pour l'utilisateur ${req.userId}`);
+    res.json(questionnaire);
+  } catch (error) {
+    console.error(`Erreur lors de la récupération du questionnaire ${req.params.id}:`, error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Mettre à jour un questionnaire
+router.put('/:id', authMiddleware, async (req, res) => {
+  console.log(`Mise à jour du questionnaire ${req.params.id}:`, JSON.stringify(req.body, null, 2));
+  try {
+    const updatedQuestionnaire = await Questionnaire.findOneAndUpdate(
+      { _id: req.params.id, user: req.userId },
+      req.body,
+      { new: true, runValidators: true }
+    );
+    if (!updatedQuestionnaire) {
+      console.log(`Questionnaire avec l'ID ${req.params.id} non trouvé pour la mise à jour`);
+      return res.status(404).json({ message: 'Questionnaire non trouvé' });
+    }
+    console.log(`Questionnaire ${req.params.id} mis à jour avec succès`);
+    res.json(updatedQuestionnaire);
+  } catch (error) {
+    console.error(`Erreur lors de la mise à jour du questionnaire ${req.params.id}:`, error);
+    res.status(400).json({ message: error.message });
+  }
+});
+
+// Supprimer un questionnaire
+router.delete('/:id', authMiddleware, async (req, res) => {
+  try {
+    const deletedQuestionnaire = await Questionnaire.findOneAndDelete({ _id: req.params.id, user: req.userId });
+    if (!deletedQuestionnaire) {
+      console.log(`Questionnaire avec l'ID ${req.params.id} non trouvé pour la suppression`);
+      return res.status(404).json({ message: 'Questionnaire non trouvé' });
+    }
+    console.log(`Questionnaire ${req.params.id} supprimé avec succès`);
+    res.json({ message: 'Questionnaire supprimé', id: req.params.id });
+  } catch (error) {
+    console.error(`Erreur lors de la suppression du questionnaire ${req.params.id}:`, error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+module.exports = router;

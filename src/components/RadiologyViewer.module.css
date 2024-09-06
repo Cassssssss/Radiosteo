@@ -1,0 +1,453 @@
+.container {
+    @apply mx-auto;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+  }
+  
+  .header {
+    flex-shrink: 0;
+  }
+  
+  .content {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+  }
+  
+  .layout {
+    @apply flex gap-4;
+    flex: 1;
+    overflow: hidden;
+  }
+  
+  .folderGrid {
+    @apply flex flex-col w-28 gap-4;
+    flex-shrink: 0;
+    overflow-y: auto;
+    height: 100%;
+  }
+  
+  .folderThumbnail {
+    @apply cursor-move bg-white shadow-md rounded-lg overflow-hidden transition-all duration-300 ease-in-out;
+    flex: 0 0 auto;
+    height: 100px;
+  }
+  
+  .folderThumbnail:hover {
+    @apply shadow-lg transform scale-105;
+  }
+  
+  .folderThumbnailImage {
+    @apply w-full h-3/4 object-cover;
+  }
+  
+  .folderThumbnailLabel {
+    @apply text-center text-xs font-semibold h-1/4 flex items-center justify-center;
+  }
+  
+  .mainViewer {
+    @apply flex-grow ml-4;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  
+  .viewer, .viewerHalf, .singleViewer {
+    @apply border-2 border-gray-300 dark:border-gray-700 rounded-lg overflow-hidden bg-black;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 80%;
+    position: relative;
+  }
+  
+  .dualViewer {
+    @apply flex gap-2;
+    height: calc(100vh - 200px);
+  }
+  
+  .viewerHalf {
+    @apply w-1/2 h-full;
+  }
+  
+  .singleViewer {
+    @apply w-3/4 mx-auto;
+    left: 0%;
+  }
+  
+  .image {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+  }
+  
+  .folderLabel {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background-color: rgba(0, 0, 0, 0.5);
+    color: white;
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-size: 14px;
+    z-index: 10;
+  }
+  
+  .bottomBar {
+    @apply fixed bottom-0 left-0 right-0 bg-gray-100 dark:bg-gray-800 p-4 flex justify-between items-center;
+    z-index: 1000;
+    height: 50px;
+  }
+  
+  .responseButton {
+    @apply bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-full shadow-lg transition-all duration-300 ease-in-out;
+  }
+  
+  .responseBox {
+    @apply fixed bottom-20 right-4 bg-white p-4 rounded-lg shadow-xl max-w-sm;
+    z-index: 1001;
+  }
+  
+  .responseText {
+    @apply text-gray-800 font-semibold;
+  }
+  
+ 
+
+  .shortcutIcon {
+    @apply bg-blue-500 text-white w-8 h-8 rounded-full flex items-center justify-center cursor-pointer;
+  }
+  
+  .shortcutPopup {
+    position: absolute;
+    bottom: 40px;
+    left: 0;
+    background-color: white;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    padding: 10px;
+    width: 300px;
+    display: none;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  }
+  
+  .shortcutPopup.visible {
+    display: block;
+  }
+  
+  .shortcutTitle {
+    font-size: 16px;
+    font-weight: bold;
+    margin-bottom: 10px;
+  }
+  
+  .shortcutList {
+    list-style-type: none;
+    padding: 0;
+  }
+  
+  .shortcutList li {
+    margin-bottom: 5px;
+  }
+
+  .container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  padding: 0; /* Retirez le padding */
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  height: 80vh;
+  overflow: hidden;
+  padding: 0;
+}
+
+.content {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+.layout {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.mainViewer {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+.viewer, .viewerHalf, .singleViewer {
+  flex: 0.9;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+}
+
+.dualViewer {
+  display: flex;
+  height: 90%;
+}
+
+.bottomBar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 50px;
+}
+
+.bottomBar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: var(--header-background);
+  color: var(--header-text);
+  padding: 0.5rem 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 1000;
+  height: 50px;
+}
+
+
+
+  
+  .shortcutGuide {
+    display: flex;
+    align-items: center;
+  }
+  
+  .shortcutIcon {
+    width: 30px;
+    height: 30px;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 18px;
+    cursor: pointer;
+    background-color: #4a69bd;
+  }
+  
+  .responseButton {
+    background-color: #4a69bd;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  
+  .responseButton:hover {
+    background-color: #3c55a5;
+  }
+
+  
+  .shortcutIcon {
+    width: 30px;
+    height: 30px;
+    border: 2px solid white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 18px;
+    cursor: pointer;
+    background-color: transparent;
+    transition: background-color 0.3s ease;
+  }
+  
+  .shortcutIcon:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+  }
+  
+  .responseButton {
+    background-color: white;
+    color: #4a69bd; /* Couleur de l'en-tête */
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+  
+  .responseButton:hover {
+    background-color: rgba(255, 255, 255, 0.8);
+    color: #3c55a5; /* Version plus foncée de la couleur de l'en-tête */
+  }
+
+  .shortcutIcon {
+  width: 30px;
+  height: 30px;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  cursor: pointer;
+  background-color: rgba(255, 255, 255, 0.1);
+  color: inherit;
+  transition: background-color 0.3s ease;
+}
+
+.shortcutIcon:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.folderThumbnailLabel {
+    @apply text-center text-xs font-semibold h-1/4 flex items-center justify-center;
+    background-color: inherit;
+    color: inherit;
+  }
+  
+  :global(.dark) .folderThumbnailLabel {
+    background-color: #1a202c; /* Couleur sombre pour le mode sombre */
+    color: #e2e8f0; /* Couleur claire pour le texte en mode sombre */
+  }
+
+  .shortcutPopup {
+    position: absolute;
+    bottom: 100%;
+    left: 0;
+    background-color: white;
+    color: black;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    padding: 10px;
+    width: 300px;
+    display: none;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    z-index: 1000;
+  }
+  
+  .shortcutPopup.visible {
+    display: block;
+  }
+  
+  :global(.dark) .shortcutPopup {
+    background-color: #2d3748;
+    color: white;
+    border-color: #4a5568;
+  }
+
+  .folderGrid {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .folderThumbnail {
+    border: 1px solid #ccc;
+    padding: 0.5rem;
+    border-radius: 4px;
+  }
+  
+  .thumbnailContainer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  
+  .thumbnail {
+    width: 50px;
+    height: 50px;
+    object-fit: cover;
+    cursor: pointer;
+    border: 2px solid transparent;
+  }
+  
+  .thumbnail:hover {
+    border-color: #007bff;
+  }
+
+  .thumbnail {
+    width: 50px;
+    height: 50px;
+    object-fit: cover;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: border-color 0.3s ease;
+  }
+  
+  .thumbnail:hover,
+  .thumbnail.selected {
+    border-color: #007bff;
+  }
+
+  .thumbnailWrapper {
+  position: relative;
+  display: inline-block;
+  margin: 2px;
+}
+
+.thumbnail {
+  width: 50px;
+  height: 50px;
+  object-fit: cover;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: border-color 0.3s ease;
+}
+
+.thumbnail:hover,
+.thumbnail.selected {
+  border-color: #007bff;
+}
+
+.deleteImageButton {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background-color: red;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.thumbnailWrapper:hover .deleteImageButton {
+  opacity: 1;
+}
+
+.sheetLink {
+  margin-left: 10px;
+  padding: 10px 20px;
+  background-color: #4a69bd;
+  color: white;
+  text-decoration: none;
+  border-radius: 4px;
+  font-size: 14px;
+  transition: background-color 0.3s;
+}
+
+.sheetLink:hover {
+  background-color: #3c55a5;
+}

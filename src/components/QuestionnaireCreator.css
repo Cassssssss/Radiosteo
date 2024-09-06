@@ -1,0 +1,68 @@
+.creator-wrapper {
+  background-color: var(--background-color);
+  color: var(--text-color);
+  padding: 2rem;
+  border-radius: 8px;
+}
+
+.creator-card {
+  background-color: var(--card-color);
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.question-card {
+  background-color: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  margin-bottom: 0.75rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.question-header {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem;
+  background-color: var(--primary-color-light);
+  border-bottom: 1px solid var(--border-color);
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+}
+
+.question-content {
+  padding: 0.75rem;
+  background-color: var(--background-color);
+}
+
+.option-card {
+  background-color: var(--card-tertiary-color);
+  border: 1px solid var(--border-color-light);
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+  padding: 0.5rem;
+}
+
+.sub-question-wrapper {
+  margin-left: 0.5rem;
+  border-left: 2px solid var(--primary-color-light);
+  padding-left: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.button {
+  background-color: var(--primary-color);
+  color: var(--button-text-color);
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.button:hover {
+  background-color: var(--secondary-color);
+}
+
+/* Ajoutez ici d'autres styles spécifiques à votre composant */
