@@ -34,7 +34,7 @@ app.use((req, res, next) => {
 });
 
 // Connect to MongoDB
-connectDB();
+connectDB(); // La fonction connectDB est appelée sans les options dépréciées
 
 // Routes
 app.use('/api/auth', authRoutes);
