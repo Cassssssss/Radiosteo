@@ -2,3 +2,9 @@ node_modules
 .DS_Store
 build
 .env
+.env.frontend
+.env.backend
+.env.development.backend
+.env.production.frontend
+.env.development.frontend
+.env.production.backend

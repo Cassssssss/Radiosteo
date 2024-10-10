@@ -1,8 +1,8 @@
 import axios from 'axios';
 
 const axiosInstance = axios.create({
-    baseURL: 'http://localhost:5002/api',
-  });
+  baseURL: '/api', // Utilisez un chemin relatif
+});
 
 axiosInstance.interceptors.request.use(
     (config) => {

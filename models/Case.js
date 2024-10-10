@@ -6,13 +6,14 @@ const CaseSchema = new mongoose.Schema({
     required: true
   },
   folders: [String],
+  mainImage: String,
   images: {
     type: Object,
     default: {}
   },
-  mainImage: String,
   folderMainImages: {
-    type: Object,
+    type: Map,
+    of: String,
     default: {}
   },
   user: {

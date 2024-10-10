@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef, memo } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ChevronDown, ChevronUp, X, ChevronLeft, ChevronRight, Eye, EyeOff } from 'lucide-react';
+import { ChevronDown, ChevronUp, Plus, Trash2, GripVertical, Copy, Camera, Upload, X, ChevronLeft, ChevronRight, Eye, EyeOff } from 'lucide-react';
 import axios from '../utils/axiosConfig';
 import styles from './RadiologyViewer.module.css';
 
@@ -18,7 +18,7 @@ const CollapsibleImageGallery = memo(({ folder, images, onImageClick, onDeleteIm
           {images.map((image, index) => (
             <div key={index} className={styles.imageWrapper}>
               <img
-                src={`${process.env.REACT_APP_SPACES_URL}/${image}`}
+                src={`${process.env.REACT_APP_UPLOAD_URL}/${image}`}
                 alt={`${folder} image ${index}`}
                 onClick={() => onImageClick(folder, index)}
                 className={styles.thumbnailImage}
@@ -62,14 +62,13 @@ function RadiologyViewer() {
   const leftViewerRef = useRef(null);
   const rightViewerRef = useRef(null);
   const singleViewerRef = useRef(null);
+  const defaultImageSrc = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAACklEQVR4nGMAAQAABQABDQottAAAAABJRU5ErkJggg==';
 
   const loadImage = useCallback((folder, index, side) => {
-    console.log('Loading image:', folder, index, side);
     if (currentCase && currentCase.images && currentCase.images[folder]) {
       const imagePath = currentCase.images[folder][index];
       if (imagePath) {
-        const imageUrl = `${process.env.REACT_APP_SPACES_URL}/${imagePath}`;
-        console.log('Image URL:', imageUrl);
+        const imageUrl = `${process.env.REACT_APP_UPLOAD_URL}/${imagePath}`;
         const imageElement = side === 'left' ? leftViewerRef.current :
                              side === 'right' ? rightViewerRef.current :
                              singleViewerRef.current;
@@ -77,39 +76,32 @@ function RadiologyViewer() {
           imageElement.src = imageUrl;
           if (side === 'left' || side === 'single') {
             setCurrentIndexLeft(index);
+            setCurrentFolderLeft(folder);
           } else if (side === 'right') {
             setCurrentIndexRight(index);
+            setCurrentFolderRight(folder);
           }
         }
       }
     }
   }, [currentCase]);
 
-  const fetchFolderThumbnails = useCallback((caseData) => {
-    if (!caseData) return;
-    const thumbnails = {};
+  useEffect(() => {
+    fetchCase();
+  }, [caseId]);
   
-    for (const folder of caseData.folders) {
+  useEffect(() => {
+    const fetchCase = async () => {
       try {
-        const imagesInFolder = caseData.images[folder];
-        if (imagesInFolder && imagesInFolder.length > 0) {
-          const firstImagePath = imagesInFolder[0];
-          const imagePath = firstImagePath.startsWith('http') 
-            ? firstImagePath 
-            : `${process.env.REACT_APP_SPACES_URL}/${firstImagePath}`;
-          console.log('Chemin de l\'image:', imagePath);
-          thumbnails[folder] = imagePath;
-        } else {
-          thumbnails[folder] = `${process.env.REACT_APP_SPACES_URL}/images/default.jpg`;
-        }
+        const response = await axios.get(`${process.env.REACT_APP_API_URL}/cases/${caseId}`);
+        setCurrentCase(response.data);
       } catch (error) {
-        console.error(`Erreur lors de la récupération de la vignette pour le dossier ${folder}:`, error);
-        thumbnails[folder] = `${process.env.REACT_APP_SPACES_URL}/images/default.jpg`;
+        console.error('Erreur lors du chargement du cas:', error);
       }
-    }
+    };
   
-    setFolderThumbnails(thumbnails);
-  }, []);
+    fetchCase();
+  }, [caseId]);
 
   const fetchCase = useCallback(async () => {
     try {
@@ -118,27 +110,32 @@ function RadiologyViewer() {
       if (response.data.folders && response.data.folders.length > 0) {
         setCurrentFolderLeft(response.data.folders[0]);
         setCurrentFolderRight(response.data.folders[0]);
+        if (response.data.images && response.data.images[response.data.folders[0]]) {
+          loadImage(response.data.folders[0], 0, 'left');
+          loadImage(response.data.folders[0], 0, 'right');
+        }
       }
       fetchFolderThumbnails(response.data);
     } catch (error) {
       console.error('Erreur lors du chargement du cas:', error);
     }
-  }, [caseId, fetchFolderThumbnails]);
+  }, [caseId, loadImage]);
 
-  useEffect(() => {
-    if (currentCase && currentCase.folders && currentCase.folders.length > 0) {
-      const firstFolder = currentCase.folders[0];
-      if (currentCase.images && currentCase.images[firstFolder]) {
-        loadImage(firstFolder, 0, 'left');
-        loadImage(firstFolder, 0, 'right');
+  const fetchFolderThumbnails = useCallback(async () => {
+    if (!currentCase) return; // Assure-toi que currentCase est défini
+    const thumbnails = {};
+    for (const folder of currentCase.folders) {
+      try {
+        const response = await axios.get(`${process.env.REACT_APP_API_URL}/cases/${currentCase._id}/folders/${folder}/main-image`);
+        thumbnails[folder] = response.data.imageUrl;
+      } catch (error) {
+        console.error(`Erreur lors de la récupération de la vignette pour le dossier ${folder}:`, error);
+        thumbnails[folder] = `${process.env.REACT_APP_UPLOAD_URL}/images/default.jpg`; // Image par défaut en cas d'erreur
       }
     }
-  }, [currentCase, loadImage]);
-
-  useEffect(() => {
-    fetchCase();
-  }, [fetchCase]);
-
+    setFolderThumbnails(thumbnails);
+  }, [currentCase]);
+  
   const applyImageTransforms = useCallback((side) => {
     const controls = imageControls[side];
     const imageElement = side === 'left' ? leftViewerRef.current : 
@@ -159,10 +156,8 @@ function RadiologyViewer() {
         const currentFolder = side === 'left' || side === 'single' ? currentFolderLeft : currentFolderRight;
         const currentIndex = side === 'left' || side === 'single' ? currentIndexLeft : currentIndexRight;
         const images = currentCase.images[currentFolder];
-        if (images) {
-          const newIndex = (currentIndex + direction + images.length) % images.length;
-          loadImage(currentFolder, newIndex, side);
-        }
+        const newIndex = (currentIndex + direction + images.length) % images.length;
+        loadImage(currentFolder, newIndex, side);
         return 0;
       }
       return newDelta;
@@ -234,20 +229,10 @@ function RadiologyViewer() {
   const handleDrop = useCallback((event, side) => {
     event.preventDefault();
     const folder = event.dataTransfer.getData('text');
-    console.log('Dropped folder:', folder);
-    if (currentCase && currentCase.images && currentCase.images[folder]) {
-      loadImage(folder, 0, side);
-      if (side === 'left' || side === 'single') {
-        setCurrentFolderLeft(folder);
-      } else {
-        setCurrentFolderRight(folder);
-      }
-    } else {
-      console.error('Invalid folder or no images in folder:', folder);
-    }
+    loadImage(folder, 0, side);
     event.target.classList.remove('drag-over');
     document.querySelectorAll('.folder-thumbnail').forEach(el => el.classList.remove('dragging'));
-  }, [currentCase, loadImage]);
+  }, [loadImage]);
 
   const handleMouseDown = useCallback((e, side) => {
     if (e.button === 0 && e.shiftKey) {
@@ -335,13 +320,14 @@ function RadiologyViewer() {
         ref={side === 'left' ? leftViewerRef : rightViewerRef}
         className={styles.image} 
         alt={`Image médicale ${side}`}
+        src={defaultImageSrc}
       />
     </div>
   ), [handleZoom, handleScroll, handleMouseDown, handleMouseMove, handleMouseUp, handleDrop, currentFolderLeft, currentFolderRight]);
 
   const renderFolderThumbnails = useCallback(() => {
     if (!currentCase || !currentCase.folders) return null;
-  
+    
     return (
       <div id="folder-thumbnails" className={styles.folderGrid}>
         {currentCase.folders.map(folder => (
@@ -352,16 +338,12 @@ function RadiologyViewer() {
             onDragStart={(e) => handleDragStart(e, folder)}
           >
             <img 
-              src={currentCase.folderMainImages && currentCase.folderMainImages[folder]
-                ? currentCase.folderMainImages[folder]
-                : `${process.env.REACT_APP_SPACES_URL}/images/default.jpg`}
+              src={folderThumbnails[folder] || `${process.env.REACT_APP_UPLOAD_URL}/images/default.jpg`}
               alt={`${folder} thumbnail`} 
               className={styles.folderThumbnailImage}
               onError={(e) => {
-                if (e.target.src !== `${process.env.REACT_APP_SPACES_URL}/images/default.jpg`) {
-                  e.target.src = `${process.env.REACT_APP_SPACES_URL}/images/default.jpg`;
-                }
                 e.target.onerror = null;
+                e.target.src = `${process.env.REACT_APP_UPLOAD_URL}/images/default.jpg`; // Image par défaut si l'image échoue
               }}
             />
             <div className={styles.folderThumbnailLabel}>{folder}</div>
@@ -369,88 +351,88 @@ function RadiologyViewer() {
         ))}
       </div>
     );
-  }, [currentCase, handleDragStart]);
+  }, [currentCase, folderThumbnails, handleDragStart]);
     
-  if (!currentCase) return <div>Chargement...</div>;
+    if (!currentCase) return <div>Chargement...</div>;
     
-  return (
-    <div className={styles.container}>
-      <div className={styles.content}>
-        <div className={styles.layout}>
-          {renderFolderThumbnails()}
-          <div id="main-viewer" className={styles.mainViewer}>
-            {isSingleViewMode ? (
-              <div 
-                id="single-viewer" 
-                className={`${styles.viewer} ${styles.singleViewer}`}
-                onWheel={(e) => {
-                  e.preventDefault();
-                  if (e.ctrlKey) {
-                    handleZoom('single', -e.deltaY);
-                  } else {
-                    handleScroll(e.deltaY, false, 'single');
-                  }
-                }}
-                onMouseDown={(e) => handleMouseDown(e, 'single')}
-                onMouseMove={(e) => handleMouseMove(e, 'single')}
-                onMouseUp={handleMouseUp}
-                onContextMenu={(e) => e.preventDefault()}
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={(e) => handleDrop(e, 'single')}
-              >
-                <div className={styles.folderLabel}>{currentFolderLeft}</div>
-                <img ref={singleViewerRef} className={styles.image} alt="Image médicale" />
-              </div>
-            ) : (
-              <div id="dual-viewer" className={styles.dualViewer}>
-                {renderViewer('left')}
-                {renderViewer('right')}
+    return (
+      <div className={styles.container}>
+        <div className={styles.content}>
+          <div className={styles.layout}>
+            {renderFolderThumbnails()}
+            <div id="main-viewer" className={styles.mainViewer}>
+              {isSingleViewMode ? (
+                <div 
+                  id="single-viewer" 
+                  className={`${styles.viewer} ${styles.singleViewer}`}
+                  onWheel={(e) => {
+                    e.preventDefault();
+                    if (e.ctrlKey) {
+                      handleZoom('single', -e.deltaY);
+                    } else {
+                      handleScroll(e.deltaY, false, 'single');
+                    }
+                  }}
+                  onMouseDown={(e) => handleMouseDown(e, 'single')}
+                  onMouseMove={(e) => handleMouseMove(e, 'single')}
+                  onMouseUp={handleMouseUp}
+                  onContextMenu={(e) => e.preventDefault()}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => handleDrop(e, 'single')}
+                >
+                  <div className={styles.folderLabel}>{currentFolderLeft}</div>
+                  <img ref={singleViewerRef} className={styles.image} alt="Image médicale" src={defaultImageSrc} />
+                </div>
+              ) : (
+                <div id="dual-viewer" className={styles.dualViewer}>
+                  {renderViewer('left')}
+                  {renderViewer('right')}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+        <div className={styles.bottomBar}>
+          <div 
+            className={styles.shortcutGuide}
+            onMouseEnter={() => setIsShortcutGuideVisible(true)}
+            onMouseLeave={() => setIsShortcutGuideVisible(false)}
+          >
+            <div className={styles.shortcutIcon}>?</div>
+            {isShortcutGuideVisible && (
+              <div className={`${styles.shortcutPopup} ${styles.visible}`}>
+                <h3 className={styles.shortcutTitle}>Guide des raccourcis</h3>
+                <ul className={styles.shortcutList}>
+                  <li><strong>Zoom :</strong> Clic droit + Déplacer la souris verticalement</li>
+                  <li><strong>Défilement des images :</strong> Molette de la souris ou flèches haut/bas</li>
+                  <li><strong>Contraste :</strong> Shift + Clic droit + Déplacer la souris horizontalement</li>
+                  <li><strong>Déplacer l'image :</strong> Shift + Clic gauche + Déplacer la souris</li>
+                  <li><strong>Mode simple/double écran :</strong> Touche "&" pour simple, "é" pour double</li>
+                </ul>
               </div>
             )}
           </div>
+    
+          <div>
+            <button 
+              className={styles.responseButton}
+              onClick={() => setIsResponseVisible(!isResponseVisible)}
+            >
+              {isResponseVisible ? "Cacher la réponse" : "Réponse"}
+            </button>
+            <Link to={`/sheet/${caseId}`} className={styles.sheetLink}>
+              Voir la fiche récapitulative
+            </Link>
+          </div>
         </div>
+    
+        {isResponseVisible && currentCase && currentCase.answer && (
+          <div className={styles.responseBox}>
+            <p className={styles.responseText}>{currentCase.answer}</p>
+          </div>
+        )}
       </div>
-      <div className={styles.bottomBar}>
-        <div 
-          className={styles.shortcutGuide}
-          onMouseEnter={() => setIsShortcutGuideVisible(true)}
-          onMouseLeave={() => setIsShortcutGuideVisible(false)}
-        >
-          <div className={styles.shortcutIcon}>?</div>
-          {isShortcutGuideVisible && (
-            <div className={`${styles.shortcutPopup} ${styles.visible}`}>
-              <h3 className={styles.shortcutTitle}>Guide des raccourcis</h3>
-              <ul className={styles.shortcutList}>
-                <li><strong>Zoom :</strong> Clic droit + Déplacer la souris verticalement</li>
-                <li><strong>Défilement des images :</strong> Molette de la souris ou flèches haut/bas</li>
-                <li><strong>Contraste :</strong> Shift + Clic droit + Déplacer la souris horizontalement</li>
-                <li><strong>Déplacer l'image :</strong> Shift + Clic gauche + Déplacer la souris</li>
-                <li><strong>Mode simple/double écran :</strong> Touche "&" pour simple, "é" pour double</li>
-              </ul>
-            </div>
-          )}
-        </div>
-  
-        <div>
-          <button 
-            className={styles.responseButton}
-            onClick={() => setIsResponseVisible(!isResponseVisible)}
-          >
-            {isResponseVisible ? "Cacher la réponse" : "Réponse"}
-          </button>
-          <Link to={`/sheet/${caseId}`} className={styles.sheetLink}>
-            Voir la fiche récapitulative
-          </Link>
-        </div>
-      </div>
-  
-      {isResponseVisible && currentCase && currentCase.answer && (
-        <div className={styles.responseBox}>
-          <p className={styles.responseText}>{currentCase.answer}</p>
-        </div>
-      )}
-    </div>
-  );
-}
-
-export default memo(RadiologyViewer);
+    );
+    }
+    
+    export default memo(RadiologyViewer);

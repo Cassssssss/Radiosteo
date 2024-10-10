@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import axios from '../utils/axiosConfig';
 import styled from 'styled-components';
 import { Editor } from '@tinymce/tinymce-react';
@@ -55,6 +55,7 @@ const SheetEditor = () => {
   const [content, setContent] = useState('');
   const [title, setTitle] = useState('');
   const editorRef = useRef(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchSheet = async () => {
@@ -86,6 +87,7 @@ const SheetEditor = () => {
     try {
       await axios.post(`/cases/${caseId}/sheet`, { title, content });
       alert('Fiche sauvegardée avec succès !');
+      navigate('/cases'); // Redirection vers la page CasesPage
     } catch (error) {
       console.error('Erreur lors de la sauvegarde de la fiche:', error);
       alert('Erreur lors de la sauvegarde de la fiche');
@@ -95,7 +97,7 @@ const SheetEditor = () => {
   const handleImageUpload = (blobInfo, progress) => new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.withCredentials = false;
-    xhr.open('POST', `${axios.defaults.baseURL}/cases/${caseId}/images`);
+    xhr.open('POST', `${process.env.REACT_APP_API_URL}/cases/${caseId}/sheet-images`);
     
     const token = localStorage.getItem('token');
     if (token) {

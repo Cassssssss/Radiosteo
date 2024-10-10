@@ -3,10 +3,11 @@ import { useParams, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
-import { ChevronDown, ChevronUp, Plus, Trash2, GripVertical, Copy, Camera, Upload, Save, Edit } from 'lucide-react';
+import { ChevronDown, ChevronUp, Plus, Trash2, GripVertical, Copy, Camera, Upload } from 'lucide-react';
 import axios from '../utils/axiosConfig';
 import QuestionnairePreview from './QuestionnairePreview';
 
+// Styled components (inchangés)
 const CreatorWrapper = styled.div`
   background-color: ${props => props.theme.background};
   color: ${props => props.theme.text};
@@ -71,19 +72,6 @@ const StyledSelect = styled.select`
   border: 1px solid ${props => props.theme.border};
 `;
 
-const Button = styled.button`
-  background-color: ${props => props.theme.primary};
-  color: ${props => props.theme.buttonText};
-  padding: 0.5rem 1rem;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  
-  &:hover {
-    background-color: ${props => props.theme.secondary};
-  }
-`;
-
 const Modal = styled.div`
   position: fixed;
   top: 0;
@@ -105,18 +93,22 @@ const ModalContent = styled.div`
   max-width: 500px;
 `;
 
-const ImageUpload = memo(({ onImageUpload, currentImage, id, onAddCaption, caption }) => {
+const ImageUpload = memo(({ onImageUpload, currentImage, id, onAddCaption, caption, questionnaireTitle }) => {
   const [showPreview, setShowPreview] = useState(false);
   const [showCaptionModal, setShowCaptionModal] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
-  const handleImageChange = (e) => {
+  const handleImageChange = async (e) => {
     const file = e.target.files[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        onImageUpload(reader.result, id);
-      };
-      reader.readAsDataURL(file);
+      setUploading(true);
+      try {
+        await onImageUpload(file, id, questionnaireTitle);
+      } catch (error) {
+        console.error('Erreur lors du téléchargement de l\'image:', error);
+      } finally {
+        setUploading(false);
+      }
     }
   };
 
@@ -128,6 +120,7 @@ const ImageUpload = memo(({ onImageUpload, currentImage, id, onAddCaption, capti
         onChange={handleImageChange}
         className="hidden"
         id={`image-upload-${id}`}
+        disabled={uploading}
       />
       <label
         htmlFor={`image-upload-${id}`}
@@ -135,6 +128,7 @@ const ImageUpload = memo(({ onImageUpload, currentImage, id, onAddCaption, capti
       >
         {currentImage ? <Camera size={20} /> : <Upload size={20} />}
       </label>
+      {uploading && <span className="ml-2">Téléchargement en cours...</span>}
       {currentImage && (
         <div 
           className="inline-block ml-2"
@@ -334,9 +328,22 @@ function QuestionnaireCreator() {
     });
   }, []);
 
-  const handleImageUpload = useCallback((imageData, elementId, caption = '') => {
-    const path = elementId.split('-');
-    updateQuestion(path, 'image', { src: imageData, caption: caption });
+  const handleImageUpload = useCallback(async (file, elementId, questionnaireTitle) => {
+    const formData = new FormData();
+    formData.append('image', file);
+    formData.append('questionnaireTitle', questionnaireTitle);
+  
+    try {
+      const response = await axios.post('/upload-image', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      const path = elementId.split('-');
+      updateQuestion(path, 'image', { src: response.data.imageUrl, caption: '' });
+    } catch (error) {
+      console.error('Erreur lors du téléchargement de l\'image:', error);
+    }
   }, [updateQuestion]);
 
   const handleAddCaption = useCallback((elementId, caption) => {
@@ -378,7 +385,7 @@ function QuestionnaireCreator() {
           if (!questions[index].options) {
             questions[index].options = [];
           }
-   questions[index].options = addRecursive(questions[index].options, restPath.slice(1));
+          questions[index].options = addRecursive(questions[index].options, restPath.slice(1));
         } else if (restPath[0] === 'subQuestions') {
           if (!questions[index].subQuestions) {
             questions[index].subQuestions = [];
@@ -392,7 +399,7 @@ function QuestionnaireCreator() {
       return { ...prev, questions: addRecursive(updatedQuestions, path) };
     });
   }, []);
-
+  
   const addOption = useCallback((path) => {
     setQuestionnaire(prev => {
       const updatedQuestions = JSON.parse(JSON.stringify(prev.questions));
@@ -411,7 +418,7 @@ function QuestionnaireCreator() {
       return { ...prev, questions: updatedQuestions };
     });
   }, []);
-
+  
   const deleteQuestion = useCallback((path) => {
     setQuestionnaire(prev => {
       const updatedQuestions = JSON.parse(JSON.stringify(prev.questions));
@@ -435,7 +442,7 @@ function QuestionnaireCreator() {
       return { ...prev, questions: updatedQuestions };
     });
   }, []);
-
+  
   const deleteOption = useCallback((path) => {
     setQuestionnaire(prev => {
       const updatedQuestions = JSON.parse(JSON.stringify(prev.questions));
@@ -453,7 +460,7 @@ function QuestionnaireCreator() {
       return { ...prev, questions: updatedQuestions };
     });
   }, []);
-
+  
   const handleSave = useCallback(async () => {
     try {
       console.log('Données à sauvegarder:', JSON.stringify(questionnaire, null, 2));
@@ -464,6 +471,7 @@ function QuestionnaireCreator() {
         response = await axios.post('/questionnaires', questionnaire);
       }
       console.log('Réponse du serveur:', response.data);
+      setQuestionnaire(response.data);
       navigate('/questionnaires');
     } catch (error) {
       console.error('Erreur lors de la sauvegarde du questionnaire:', error);
@@ -478,7 +486,7 @@ function QuestionnaireCreator() {
       }
     }
   }, [questionnaire, id, navigate]);
-
+  
   const handleFreeTextChange = useCallback((questionId, value) => {
     setQuestionnaire(prev => ({
       ...prev,
@@ -491,7 +499,7 @@ function QuestionnaireCreator() {
       }
     }));
   }, []);
-
+  
   const handleOptionChange = useCallback((questionId, optionIndex, questionType) => {
     setQuestionnaire(prev => {
       const updatedQuestionnaire = JSON.parse(JSON.stringify(prev));
@@ -516,12 +524,12 @@ function QuestionnaireCreator() {
       return updatedQuestionnaire;
     });
   }, []);
-
+  
   const renderQuestion = useCallback((question, path) => {
     const isExpanded = expandedQuestions[path.join('-')] ?? true;
     const questionId = path.join('-');
     const depth = path.length;
-
+  
     return (
       <DraggableQuestion
         key={question.id || `question-${questionId}`}
@@ -545,13 +553,14 @@ function QuestionnaireCreator() {
               onChange={(e) => updateQuestion(path, 'text', e.target.value)}
               placeholder="Texte de la question"
             />
-            <ImageUpload
-              onImageUpload={handleImageUpload}
-              currentImage={question.image?.src}
-              id={questionId}
-              onAddCaption={handleAddCaption}
-              caption={question.image?.caption}
-            />
+           <ImageUpload
+  onImageUpload={handleImageUpload}
+  currentImage={question.image?.src}
+  id={questionId}
+  onAddCaption={handleAddCaption}
+  caption={question.image?.caption}
+  questionnaireTitle={questionnaire.title} // Assurez-vous que cette ligne est présente
+/>
             <button
               className="ml-2 p-1 text-blue-500 hover:text-blue-700 rounded-full hover:bg-blue-100"
               onClick={() => {
@@ -598,6 +607,7 @@ function QuestionnaireCreator() {
                           id={`${questionId}-options-${oIndex}`}
                           onAddCaption={handleAddCaption}
                           caption={option.image?.caption}
+                          questionnaireTitle={questionnaire.title}
                         />
                         <button
                           className="ml-1 p-1 text-red-500 hover:text-red-700 rounded-full hover:bg-red-100"
@@ -632,8 +642,8 @@ function QuestionnaireCreator() {
         </QuestionCard>
       </DraggableQuestion>
     );
-  }, [expandedQuestions, moveQuestion, toggleQuestion, updateQuestion, handleImageUpload, duplicateQuestion, addQuestion, deleteQuestion, deleteOption, addOption, handleAddCaption]);
-
+  }, [expandedQuestions, moveQuestion, toggleQuestion, updateQuestion, handleImageUpload, duplicateQuestion, addQuestion, deleteQuestion, deleteOption, addOption, handleAddCaption, questionnaire.title]);
+  
   return (
     <CreatorWrapper>
       <div className="flex flex-col lg:flex-row gap-8">
@@ -689,6 +699,6 @@ function QuestionnaireCreator() {
       </div>
     </CreatorWrapper>
   );
-}
-
-export default memo(QuestionnaireCreator);
+  }
+  
+  export default memo(QuestionnaireCreator);

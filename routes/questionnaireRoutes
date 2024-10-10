@@ -1,15 +1,88 @@
 const express = require('express');
 const router = express.Router();
+const s3 = require('../src/utils/spacesConfig');
 const Questionnaire = require('../models/Questionnaire');
 const authMiddleware = require('../middleware/authMiddleware');
+const sharp = require('sharp');
+const imageRoutes = require('./imageRoutes');
+const deleteImageFromSpaces = imageRoutes.deleteImageFromSpaces;
 
-// Middleware pour logger les requêtes
 router.use((req, res, next) => {
   console.log(`${req.method} ${req.url}`);
   next();
 });
 
-// Obtenir tous les questionnaires de l'utilisateur connecté
+const compressAndUploadImage = async (imageData, folderName, fileName) => {
+  console.log(`Début de l'upload pour ${folderName}/${fileName}`);
+  
+  if (imageData.startsWith('http')) {
+    console.log(`Image déjà uploadée : ${imageData}`);
+    return imageData;
+  }
+
+  const matches = imageData.match(/^data:image\/([A-Za-z-+\/]+);base64,(.+)$/);
+  if (!matches || matches.length !== 3) {
+    console.error('Invalid base64 image string');
+    throw new Error('Invalid base64 image string');
+  }
+
+  const imageBuffer = Buffer.from(matches[2], 'base64');
+  const imageType = matches[1];
+
+  const compressedImageBuffer = await sharp(imageBuffer)
+    .resize({ width: 800, height: 800, fit: 'inside' })
+    .webp({ quality: 80 })
+    .toBuffer();
+
+  const sanitizedFolderName = folderName.replace(/[^a-zA-Z0-9]/g, '_');
+  const sanitizedFileName = `${Date.now()}_${fileName.replace(/[^a-zA-Z0-9]/g, '_')}.webp`;
+
+  const fullPath = `${sanitizedFolderName}/${sanitizedFileName}`;
+  console.log(`Chemin complet de l'image : ${fullPath}`);
+
+  const params = {
+    Bucket: process.env.DO_SPACES_BUCKET,
+    Key: fullPath,
+    Body: compressedImageBuffer,
+    ACL: 'public-read',
+    ContentType: 'image/webp'
+  };
+  
+  try {
+    const { Location } = await s3.upload(params).promise();
+    console.log(`Image uploadée avec succès : ${Location}`);
+    return Location;
+  } catch (error) {
+    console.error(`Erreur lors de l'upload de l'image : ${error.message}`);
+    throw error;
+  }
+};
+
+const processImagesRecursively = async (item, questionnaireTitle, parentId = '') => {
+  console.log(`Traitement de l'item : ${item.id} pour le questionnaire : ${questionnaireTitle}`);
+  
+  if (item.image && item.image.src) {
+    console.log(`Traitement de l'image pour l'item : ${item.id}`);
+    try {
+      item.image.src = await compressAndUploadImage(item.image.src, questionnaireTitle, `${parentId}_${item.id}`);
+    } catch (error) {
+      console.error(`Erreur lors du traitement de l'image pour l'item ${item.id}:`, error);
+    }
+  }
+  
+  if (item.options) {
+    for (let option of item.options) {
+      await processImagesRecursively(option, questionnaireTitle, `${parentId}_${item.id}`);
+    }
+  }
+  
+  if (item.subQuestions) {
+    for (let subQuestion of item.subQuestions) {
+      await processImagesRecursively(subQuestion, questionnaireTitle, `${parentId}_${item.id}`);
+    }
+  }
+};
+
 router.get('/', authMiddleware, async (req, res) => {
   try {
     const questionnaires = await Questionnaire.find({ user: req.userId });
@@ -21,24 +94,31 @@ router.get('/', authMiddleware, async (req, res) => {
   }
 });
 
-// Créer un nouveau questionnaire
 router.post('/', authMiddleware, async (req, res) => {
   console.log('Création d\'un nouveau questionnaire:', JSON.stringify(req.body, null, 2));
-  const questionnaire = new Questionnaire({
-    ...req.body,
-    user: req.userId
-  });
   try {
+    const { title, questions } = req.body;
+    
+    console.log(`Création du questionnaire : ${title}`);
+    for (let question of questions) {
+      await processImagesRecursively(question, title);
+    }
+
+    const questionnaire = new Questionnaire({
+      title,
+      questions,
+      user: req.userId
+    });
+
     const newQuestionnaire = await questionnaire.save();
     console.log('Nouveau questionnaire créé avec l\'ID:', newQuestionnaire._id);
     res.status(201).json(newQuestionnaire);
   } catch (error) {
     console.error('Erreur lors de la création du questionnaire:', error);
-    res.status(400).json({ message: error.message });
+    res.status(500).json({ message: 'Erreur lors de la création du questionnaire', error: error.message });
   }
 });
 
-// Obtenir un questionnaire spécifique
 router.get('/:id', authMiddleware, async (req, res) => {
   try {
     const questionnaire = await Questionnaire.findOne({ _id: req.params.id, user: req.userId });
@@ -54,15 +134,22 @@ router.get('/:id', authMiddleware, async (req, res) => {
   }
 });
 
-// Mettre à jour un questionnaire
 router.put('/:id', authMiddleware, async (req, res) => {
   console.log(`Mise à jour du questionnaire ${req.params.id}:`, JSON.stringify(req.body, null, 2));
   try {
+    const { title, questions } = req.body;
+
+    console.log(`Mise à jour du questionnaire : ${title}`);
+    for (let question of questions) {
+      await processImagesRecursively(question, title);
+    }
+
     const updatedQuestionnaire = await Questionnaire.findOneAndUpdate(
       { _id: req.params.id, user: req.userId },
-      req.body,
+      { title, questions },
       { new: true, runValidators: true }
     );
+
     if (!updatedQuestionnaire) {
       console.log(`Questionnaire avec l'ID ${req.params.id} non trouvé pour la mise à jour`);
       return res.status(404).json({ message: 'Questionnaire non trouvé' });
@@ -71,20 +158,71 @@ router.put('/:id', authMiddleware, async (req, res) => {
     res.json(updatedQuestionnaire);
   } catch (error) {
     console.error(`Erreur lors de la mise à jour du questionnaire ${req.params.id}:`, error);
-    res.status(400).json({ message: error.message });
+    res.status(500).json({ message: 'Erreur lors de la mise à jour du questionnaire', error: error.message });
   }
 });
 
-// Supprimer un questionnaire
 router.delete('/:id', authMiddleware, async (req, res) => {
   try {
-    const deletedQuestionnaire = await Questionnaire.findOneAndDelete({ _id: req.params.id, user: req.userId });
-    if (!deletedQuestionnaire) {
-      console.log(`Questionnaire avec l'ID ${req.params.id} non trouvé pour la suppression`);
+    const questionnaire = await Questionnaire.findOne({ _id: req.params.id, user: req.userId });
+    if (!questionnaire) {
       return res.status(404).json({ message: 'Questionnaire non trouvé' });
     }
-    console.log(`Questionnaire ${req.params.id} supprimé avec succès`);
-    res.json({ message: 'Questionnaire supprimé', id: req.params.id });
+
+    const deleteImagesRecursively = async (questions) => {
+      for (const question of questions) {
+        if (question.image && question.image.src) {
+          const urlParts = question.image.src.split('/');
+          const fileName = urlParts[urlParts.length - 1];
+          await deleteImageFromSpaces(questionnaire.title, fileName);
+        }
+        if (question.options) {
+          for (const option of question.options) {
+            if (option.image && option.image.src) {
+              const urlParts = option.image.src.split('/');
+              const fileName = urlParts[urlParts.length - 1];
+              await deleteImageFromSpaces(questionnaire.title, fileName);
+            }
+            if (option.subQuestions) {
+              await deleteImagesRecursively(option.subQuestions);
+            }
+          }
+        }
+      }
+    };
+
+    console.log(`Suppression des images pour le questionnaire: ${questionnaire.title}`);
+    await deleteImagesRecursively(questionnaire.questions);
+
+    // Suppression du dossier du questionnaire
+    const sanitizedFolderName = questionnaire.title.replace(/[^a-zA-Z0-9]/g, '_');
+    const folderKey = `${sanitizedFolderName}/`;
+    console.log(`Tentative de suppression du dossier: ${folderKey}`);
+    try {
+      const listParams = {
+        Bucket: process.env.DO_SPACES_BUCKET,
+        Prefix: folderKey
+      };
+      const listedObjects = await s3.listObjectsV2(listParams).promise();
+      if (listedObjects.Contents.length > 0) {
+        const deleteParams = {
+          Bucket: process.env.DO_SPACES_BUCKET,
+          Delete: { Objects: [] }
+        };
+        listedObjects.Contents.forEach(({ Key }) => {
+          deleteParams.Delete.Objects.push({ Key });
+        });
+        await s3.deleteObjects(deleteParams).promise();
+      }
+      console.log(`Dossier supprimé avec succès: ${folderKey}`);
+    } catch (error) {
+      console.error(`Erreur lors de la suppression du dossier ${folderKey}:`, error);
+    }
+
+    await Questionnaire.findOneAndDelete({ _id: req.params.id, user: req.userId });
+
+    console.log(`Questionnaire supprimé avec succès: ${questionnaire.title}`);
+    res.json({ message: 'Questionnaire et images associées supprimés avec succès', id: req.params.id });
   } catch (error) {
     console.error(`Erreur lors de la suppression du questionnaire ${req.params.id}:`, error);
     res.status(500).json({ message: error.message });

@@ -185,7 +185,7 @@ function CaseCardComponent({ cas, showSpoilers }) {
   return (
     <CaseCard to={`/radiology-viewer/${cas._id}`}>
       <CaseImage 
-        src={cas.mainImage ? `http://localhost:5002/${cas.mainImage}` : 'http://localhost:5002/images/default.jpg'}
+        src={cas.mainImage ? cas.mainImage : (cas.folders && cas.folders[0] && cas.folderMainImages && cas.folderMainImages[cas.folders[0]]) || '/images/default.jpg'}
         alt={cas.title}
         loading="lazy"
       />

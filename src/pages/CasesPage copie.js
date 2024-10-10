@@ -20,7 +20,6 @@ const CollapsibleImageGallery = memo(({ folder, images, onImageClick, onDeleteIm
     const loadFolderMainImage = async () => {
       const imageUrl = await fetchFolderMainImage(caseId, folder);
       setFolderMainImage(imageUrl);
-      console.log(imageUrl);
     };
     loadFolderMainImage();
   }, [caseId, folder, fetchFolderMainImage]);
@@ -48,7 +47,7 @@ const CollapsibleImageGallery = memo(({ folder, images, onImageClick, onDeleteIm
                 onClick={() => onImageClick(folder, index)}
                 onError={() => setImageLoadError(prev => ({ ...prev, [image]: true }))}
               />
-              <S.DeleteButton onClick={() => onDeleteImage(caseId, folder, image)}>
+              <S.DeleteButton onClick={() => onDeleteImage(folder, image)}>
                 <X size={12} />
               </S.DeleteButton>
             </S.ImageWrapper>
@@ -219,7 +218,7 @@ function CasesPage() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [API_BASE_URL]);
 
   const handleImageUpload = useCallback((event, folder) => {
     const files = Array.from(event.target.files);
@@ -233,21 +232,6 @@ function CasesPage() {
         }))
       ]
     }));
-  }, []);
-
-  const loadCase = useCallback(async (id) => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const response = await axios.get(`${API_BASE_URL}/cases/${id}`);
-      setSelectedCase(response.data);
-      setCases(prevCases => prevCases.map(c => c._id === id ? response.data : c));
-    } catch (error) {
-      setError('Erreur lors du chargement du cas');
-      console.error('Erreur lors du chargement du cas:', error);
-    } finally {
-      setIsLoading(false);
-    }
   }, []);
 
   const handleImageClick = useCallback((folder, index) => {
@@ -283,8 +267,7 @@ function CasesPage() {
     try {
       const response = await axios.get(`${API_BASE_URL}/cases/${caseId}`);
       if (response.data && response.data.folderMainImages && response.data.folderMainImages[folder]) {
-        // Construire l'URL complète en utilisant la structure correcte
-        return `${process.env.REACT_APP_SPACES_URL}/cas_${caseId}/${folder}/folder-main-image/${response.data.folderMainImages[folder]}`;
+        return response.data.folderMainImages[folder];
       }
     } catch (error) {
       console.error('Erreur lors de la récupération des données du cas:', error);
@@ -313,7 +296,7 @@ function CasesPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [newCaseTitle]);
+  }, [newCaseTitle, API_BASE_URL]);
 
   const addNewFolder = useCallback(async () => {
     if (!selectedCase || newFolderName.trim() === '') return;
@@ -330,7 +313,7 @@ function CasesPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [selectedCase, newFolderName]);
+  }, [selectedCase, newFolderName, API_BASE_URL]);
 
   const addImagesToCase = useCallback(async () => {
     if (!selectedCase) return;
@@ -361,7 +344,7 @@ function CasesPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [selectedCase, newImages]);
+  }, [selectedCase, newImages, API_BASE_URL]);
   
   const setMainImage = useCallback(async (event) => {
     const file = event.target.files[0];
@@ -379,12 +362,11 @@ function CasesPage() {
       } catch (error) {
         setError('Erreur lors de la définition de l\'image principale');
         console.error('Erreur lors de la définition de l\'image principale:', error);
-      } 
-    finally {
+      } finally {
         setIsLoading(false);
       }
     }
-  }, [selectedCase]);
+  }, [selectedCase, API_BASE_URL]);
   
   const setFolderMainImage = useCallback(async (event, folder) => {
     const file = event.target.files[0];
@@ -398,19 +380,21 @@ function CasesPage() {
         const response = await axios.post(`${API_BASE_URL}/cases/${selectedCase._id}/folder-main-image`, formData, {
           headers: { 'Content-Type': 'multipart/form-data' }
         });
-  
-        // Mise à jour de l'état local avec le nom du fichier
+        
         setCases(prevCases => prevCases.map(c => 
           c._id === selectedCase._id 
-            ? { ...c, folderMainImages: { ...c.folderMainImages, [folder]: file.name } }
+            ? {...c, folderMainImages: {...c.folderMainImages, [folder]: response.data.folderMainImages.get(folder)}} 
             : c
         ));
-  
+        
         setSelectedCase(prevCase => ({
           ...prevCase,
-          folderMainImages: { ...prevCase.folderMainImages, [folder]: file.name }
+          folderMainImages: {...prevCase.folderMainImages, [folder]: response.data.folderMainImages.get(folder)}
         }));
-  
+        
+        // Rechargez le cas pour s'assurer que toutes les données sont à jour
+        await loadCase(selectedCase._id);
+        
       } catch (error) {
         setError('Erreur lors de la définition de l\'image principale du dossier');
         console.error('Erreur lors de la définition de l\'image principale du dossier:', error);
@@ -418,7 +402,7 @@ function CasesPage() {
         setIsLoading(false);
       }
     }
-  }, [selectedCase, API_BASE_URL]);
+  }, [selectedCase, API_BASE_URL, loadCase]);
   
   const deleteFolder = useCallback(async (folder) => {
     if (window.confirm(`Êtes-vous sûr de vouloir supprimer le dossier "${folder}" ?`)) {
@@ -432,8 +416,23 @@ function CasesPage() {
         setError('Erreur lors de la suppression du dossier');
       }
     }
-  }, [selectedCase]);
-
+  }, [selectedCase, API_BASE_URL]);
+  
+  const loadCase = useCallback(async (id) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await axios.get(`${API_BASE_URL}/cases/${id}`);
+      setSelectedCase(response.data);
+      setCases(prevCases => prevCases.map(c => c._id === id ? response.data : c));
+    } catch (error) {
+      setError('Erreur lors du chargement du cas');
+      console.error('Erreur lors du chargement du cas:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [API_BASE_URL]);
+  
   const deleteCase = useCallback(async (id) => {
     if (window.confirm('Êtes-vous sûr de vouloir supprimer ce cas ?')) {
       setIsLoading(true);
@@ -443,8 +442,8 @@ function CasesPage() {
         setCases(prevCases => prevCases.filter(c => c._id !== id));
         setSelectedCase(null);
       } catch (error) {
-        console.error('Erreur lors de la suppression du cas:', error);
         setError('Erreur lors de la suppression du cas');
+        console.error('Erreur lors de la suppression du cas:', error);
       } finally {
         setIsLoading(false);
       }
@@ -468,23 +467,21 @@ function CasesPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [selectedCase]);
+  }, [selectedCase, API_BASE_URL]);
   
-  const deleteExistingImage = useCallback(async (caseId, folder, imagePath) => {
+  const deleteExistingImage = useCallback(async (folder, imagePath) => {
     try {
-      // Extrayez le nom du fichier du chemin complet
-      const fileName = imagePath.split('/').pop();
-      await axios.delete(`${API_BASE_URL}/cases/${caseId}/images`, {
-        data: { folder, fileName }
+      await axios.delete(`${API_BASE_URL}/cases/${selectedCase._id}/images`, {
+        data: { folder, imagePath }
       });
-      const updatedCase = await axios.get(`${API_BASE_URL}/cases/${caseId}`);
-      setCases(prevCases => prevCases.map(c => c._id === caseId ? updatedCase.data : c));
+      const updatedCase = await axios.get(`${API_BASE_URL}/cases/${selectedCase._id}`);
+      setCases(prevCases => prevCases.map(c => c._id === selectedCase._id ? updatedCase.data : c));
       setSelectedCase(updatedCase.data);
     } catch (error) {
       console.error('Erreur lors de la suppression de l\'image:', error);
       setError('Erreur lors de la suppression de l\'image');
     }
-  }, [API_BASE_URL]);
+  }, [selectedCase, API_BASE_URL]);
   
   const updateCaseDifficulty = useCallback(async (id, difficulty) => {
     try {
@@ -495,7 +492,7 @@ function CasesPage() {
     } catch (error) {
       console.error('Erreur lors de la mise à jour de la difficulté:', error);
     }
-  }, []);
+  }, [API_BASE_URL]);
   
   const updateCaseAnswer = useCallback(async (id, answer) => {
     try {
@@ -506,7 +503,7 @@ function CasesPage() {
     } catch (error) {
       console.error('Erreur lors de la mise à jour de la réponse:', error);
     }
-  }, []);
+  }, [API_BASE_URL]);
   
   const handleAddTag = useCallback(async (caseId, tag) => {
     try {
@@ -515,7 +512,7 @@ function CasesPage() {
     } catch (error) {
       console.error('Erreur lors de l\'ajout du tag:', error);
     }
-  }, []);
+  }, [API_BASE_URL]);
   
   const handleRemoveTag = useCallback(async (caseId, tagToRemove) => {
     try {
@@ -524,7 +521,7 @@ function CasesPage() {
     } catch (error) {
       console.error('Erreur lors de la suppression du tag:', error);
     }
-  }, []);
+  }, [API_BASE_URL]);
   
   const filteredCases = cases.filter(cas => 
     cas.title.toLowerCase().includes(searchTerm.toLowerCase())
@@ -669,22 +666,22 @@ function CasesPage() {
   
       <S.FoldersSection>
       {selectedCase && selectedCase.images && (
-        <S.SectionContainer>
-          <h2>{selectedCase.title}</h2>
-          {selectedCase.folders.map(folder => (
-            selectedCase.images[folder] && (
-              <CollapsibleImageGallery
-                key={folder}
-                folder={folder}
-                images={selectedCase.images[folder]}
-                onImageClick={(image, index) => handleImageClick(folder, index)}
-                onDeleteImage={deleteExistingImage}
-                caseId={selectedCase._id}
-                fetchFolderMainImage={fetchFolderMainImage}
-              />
-            )
-          ))}
-          {selectedImage && (
+  <S.SectionContainer>
+    <h2>{selectedCase.title}</h2>
+    {selectedCase.folders.map(folder => (
+      selectedCase.images[folder] && (
+        <CollapsibleImageGallery
+          key={folder}
+          folder={folder}
+          images={selectedCase.images[folder]}
+          onImageClick={(image, index) => handleImageClick(folder, index)}
+          onDeleteImage={deleteExistingImage}
+          caseId={selectedCase._id}
+          fetchFolderMainImage={fetchFolderMainImage}
+        />
+      )
+    ))}
+           {selectedImage && (
             <S.LargeImageContainer onClick={closeImage}>
               <S.LargeImage src={selectedImage} alt="Selected" onClick={(e) => e.stopPropagation()} />
               <S.CloseButton onClick={(e) => { e.stopPropagation(); closeImage(); }}>
@@ -718,25 +715,25 @@ function CasesPage() {
       </S.SectionContainer>
     )}
 
-    {selectedCase && (
-      <S.SectionContainer>
-        <h3>Images principales des dossiers :</h3>
-        {selectedCase.folders.map(folder => (
-          <div key={folder}>
-            <h4>{folder}</h4>
-            {selectedCase.folderMainImages && selectedCase.folderMainImages[folder] ? (
-              <img 
-                src={selectedCase.folderMainImages[folder]} 
-                alt={`Image principale de ${folder}`} 
-                style={{ maxWidth: '200px', maxHeight: '200px' }} 
-              />
-            ) : (
-              <p>Pas d'image principale définie pour ce dossier</p>
-            )}
-          </div>
-        ))}
-      </S.SectionContainer>
-    )}
+{selectedCase && (
+  <S.SectionContainer>
+    <h3>Images principales des dossiers :</h3>
+    {selectedCase.folders.map(folder => (
+      <div key={folder}>
+        <h4>{folder}</h4>
+        {selectedCase.folderMainImages && selectedCase.folderMainImages[folder] ? (
+          <img 
+            src={selectedCase.folderMainImages[folder]} 
+            alt={`Image principale de ${folder}`} 
+            style={{ maxWidth: '200px', maxHeight: '200px' }} 
+          />
+        ) : (
+          <p>Pas d'image principale définie pour ce dossier</p>
+        )}
+      </div>
+    ))}
+  </S.SectionContainer>
+)}
 
     {isLoading && <LoadingSpinner />}
     {error && <ErrorMessage>{error}</ErrorMessage>}

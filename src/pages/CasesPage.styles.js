@@ -430,3 +430,22 @@ export const AddTagButton = styled.button`
   display: flex;
   align-items: center;
 `;
+
+export const MainImageLabel = styled.div`
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 2px 5px;
+  font-size: 10px;
+  border-radius: 3px;
+`;
+
+export const FolderMainImage = styled.img`
+  width: 30px;
+  height: 30px;
+  object-fit: cover;
+  border-radius: 4px;
+  margin-right: 10px;
+`;

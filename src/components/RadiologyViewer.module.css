@@ -36,7 +36,7 @@
   }
   
   .folderThumbnail:hover {
-    @apply shadow-lg transform scale-105;
+    transform: scale(1.05);
   }
   
   .folderThumbnailImage {
@@ -451,3 +451,4 @@
 .sheetLink:hover {
   background-color: #3c55a5;
 }
+

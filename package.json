@@ -4,9 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "react-scripts --openssl-legacy-provider start",
-    "build": "GENERATE_SOURCEMAP=false react-scripts build",
-    "server": "nodemon server.js",
+    "start": "env HOST=0.0.0.0 env-cmd -f .env.development.frontend react-scripts --openssl-legacy-provider start",
+    "build": "env-cmd -f .env.production.frontend GENERATE_SOURCEMAP=false react-scripts build",
+    "server": "env-cmd -f .env.development.backend nodemon server.js",
+    "server:prod": "env-cmd -f .env.production.backend node server.js",
     "dev": "concurrently \"npm run server\" \"npm run start\""
   },
   "proxy": "http://localhost:5002",
@@ -23,11 +24,13 @@
     "@types/react": "^18.3.5",
     "ajv": "^8.17.1",
     "ajv-keywords": "^5.1.0",
+    "aws-sdk": "^2.1691.0",
     "axios": "^1.7.7",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "express": "^4.19.2",
     "framer-motion": "^11.3.30",
+    "hast-util-raw": "^9.0.4",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.427.0",
     "mongodb": "^6.8.0",
@@ -48,6 +51,7 @@
     "react-tooltip": "^5.28.0",
     "react-transition-group": "^4.4.5",
     "rehype-raw": "^7.0.0",
+    "sharp": "^0.33.5",
     "slate": "^0.103.0",
     "slate-history": "^0.109.0",
     "slate-react": "^0.110.0",
@@ -66,11 +70,21 @@
     ]
   },
   "devDependencies": {
+    "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
     "autoprefixer": "^10.4.20",
     "concurrently": "^8.2.2",
+    "env-cmd": "^10.1.0",
     "nodemon": "^3.1.4",
     "postcss": "^8.4.41",
     "tailwindcss": "^3.4.9",
     "typescript": "^4.9.5"
+  },
+  "babel": {
+    "presets": [
+      "react-app"
+    ],
+    "plugins": [
+      "@babel/plugin-proposal-private-property-in-object"
+    ]
   }
 }
