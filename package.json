@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "env HOST=0.0.0.0 env-cmd -f .env.development.frontend react-scripts --openssl-legacy-provider start",
-    "build": "env-cmd -f .env.production.frontend GENERATE_SOURCEMAP=false react-scripts build",
+    "build": "cross-env GENERATE_SOURCEMAP=false env-cmd -f .env.production.frontend react-scripts build",
     "server": "env-cmd -f .env.development.backend nodemon server.js",
     "server:prod": "env-cmd -f .env.production.backend node server.js",
     "dev": "concurrently \"npm run server\" \"npm run start\""
@@ -73,6 +73,7 @@
     "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
     "autoprefixer": "^10.4.20",
     "concurrently": "^8.2.2",
+    "cross-env": "^7.0.3",
     "env-cmd": "^10.1.0",
     "nodemon": "^3.1.4",
     "postcss": "^8.4.41",

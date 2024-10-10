@@ -8,7 +8,9 @@ import ErrorMessage from '../components/ErrorMessage';
 import * as S from './CasesPage.styles';
 import { CasesGrid, FoldersSection } from './CasesPage.styles';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5002/api';
+console.log('Axios baseURL:', axios.defaults.baseURL);
+
+
 const UPLOAD_BASE_URL = process.env.REACT_APP_UPLOAD_URL || 'http://localhost:5002/uploads';
 
 const CollapsibleImageGallery = memo(({ folder, images, onImageClick, onDeleteImage, caseId, fetchFolderMainImage }) => {
@@ -290,7 +292,7 @@ function CasesPage() {
       console.error('Erreur lors de la récupération des données du cas:', error);
     }
     return null;
-  }, [API_BASE_URL]);
+  }, );
 
   const addNewCase = useCallback(async () => {
     if (newCaseTitle.trim() === '') return;
@@ -320,7 +322,7 @@ function CasesPage() {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await axios.post(`${API_BASE_URL}/cases/${selectedCase._id}/folders`, { folderName: newFolderName });
+      const response = await axios.post(`/cases/${selectedCase._id}/folders`, { folderName: newFolderName });
       setCases(prevCases => prevCases.map(c => c._id === selectedCase._id ? response.data : c));
       setSelectedCase(response.data);
       setNewFolderName('');
@@ -346,7 +348,7 @@ function CasesPage() {
   
         console.log('Envoi de formData:', Object.fromEntries(formData));
   
-        const response = await axios.post(`${API_BASE_URL}/cases/${selectedCase._id}/images`, formData, {
+        const response = await axios.post(`/cases/${selectedCase._id}/images`, formData, {
           headers: { 'Content-Type': 'multipart/form-data' }
         });
         console.log('Réponse du serveur:', response.data);
@@ -371,7 +373,7 @@ function CasesPage() {
       try {
         const formData = new FormData();
         formData.append('mainImage', file);
-        const response = await axios.post(`${API_BASE_URL}/cases/${selectedCase._id}/main-image`, formData, {
+        const response = await axios.post(`/cases/${selectedCase._id}/main-image`, formData, {
           headers: { 'Content-Type': 'multipart/form-data' }
         });
         setCases(prevCases => prevCases.map(c => c._id === selectedCase._id ? response.data : c));
@@ -395,7 +397,7 @@ function CasesPage() {
         const formData = new FormData();
         formData.append('folderMainImage', file);
         formData.append('folder', folder);
-        const response = await axios.post(`${API_BASE_URL}/cases/${selectedCase._id}/folder-main-image`, formData, {
+        const response = await axios.post(`/cases/${selectedCase._id}/folder-main-image`, formData, {
           headers: { 'Content-Type': 'multipart/form-data' }
         });
   
@@ -418,12 +420,12 @@ function CasesPage() {
         setIsLoading(false);
       }
     }
-  }, [selectedCase, API_BASE_URL]);
+  }, [selectedCase]);
   
   const deleteFolder = useCallback(async (folder) => {
     if (window.confirm(`Êtes-vous sûr de vouloir supprimer le dossier "${folder}" ?`)) {
       try {
-        await axios.delete(`${API_BASE_URL}/cases/${selectedCase._id}/folders/${folder}`);
+        await axios.delete(`/cases/${selectedCase._id}/folders/${folder}`);
         const updatedCase = await axios.get(`/cases/${selectedCase._id}`);
         setCases(prevCases => prevCases.map(c => c._id === selectedCase._id ? updatedCase.data : c));
         setSelectedCase(updatedCase.data);
@@ -439,7 +441,7 @@ function CasesPage() {
       setIsLoading(true);
       setError(null);
       try {
-        await axios.delete(`${API_BASE_URL}/cases/${id}`);
+        await axios.delete(`/cases/${id}`);
         setCases(prevCases => prevCases.filter(c => c._id !== id));
         setSelectedCase(null);
       } catch (error) {
@@ -449,7 +451,7 @@ function CasesPage() {
         setIsLoading(false);
       }
     }
-  }, [API_BASE_URL]);
+  }, );
   
   const verifyImages = useCallback(async () => {
     if (!selectedCase) {
@@ -474,7 +476,7 @@ function CasesPage() {
     try {
       // Extrayez le nom du fichier du chemin complet
       const fileName = imagePath.split('/').pop();
-      await axios.delete(`${API_BASE_URL}/cases/${caseId}/images`, {
+      await axios.delete(`/cases/${caseId}/images`, {
         data: { folder, fileName }
       });
       const updatedCase = await axios.get(`/cases/${caseId}`);
@@ -484,11 +486,11 @@ function CasesPage() {
       console.error('Erreur lors de la suppression de l\'image:', error);
       setError('Erreur lors de la suppression de l\'image');
     }
-  }, [API_BASE_URL]);
+  }, );
   
   const updateCaseDifficulty = useCallback(async (id, difficulty) => {
     try {
-      await axios.patch(`${API_BASE_URL}/cases/${id}`, { difficulty });
+      await axios.patch(`/cases/${id}`, { difficulty });
       setCases(prevCases => prevCases.map(c => 
         c._id === id ? { ...c, difficulty } : c
       ));
@@ -499,7 +501,7 @@ function CasesPage() {
   
   const updateCaseAnswer = useCallback(async (id, answer) => {
     try {
-      await axios.patch(`${API_BASE_URL}/cases/${id}`, { answer });
+      await axios.patch(`/cases/${id}`, { answer });
       setCases(prevCases => prevCases.map(c => 
         c._id === id ? { ...c, answer } : c
       ));
@@ -510,7 +512,7 @@ function CasesPage() {
   
   const handleAddTag = useCallback(async (caseId, tag) => {
     try {
-      const response = await axios.patch(`${API_BASE_URL}/cases/${caseId}/tags`, { tagToAdd: tag });
+      const response = await axios.patch(`/cases/${caseId}/tags`, { tagToAdd: tag });
       setCases(prevCases => prevCases.map(c => c._id === caseId ? response.data : c));
     } catch (error) {
       console.error('Erreur lors de l\'ajout du tag:', error);
@@ -519,7 +521,7 @@ function CasesPage() {
   
   const handleRemoveTag = useCallback(async (caseId, tagToRemove) => {
     try {
-      const response = await axios.patch(`${API_BASE_URL}/cases/${caseId}/tags`, { tagToRemove });
+      const response = await axios.patch(`/cases/${caseId}/tags`, { tagToRemove });
       setCases(prevCases => prevCases.map(c => c._id === caseId ? response.data : c));
     } catch (error) {
       console.error('Erreur lors de la suppression du tag:', error);
