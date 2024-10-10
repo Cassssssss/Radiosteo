@@ -202,7 +202,7 @@ function CasesPage() {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await axios.get(`${API_BASE_URL}/cases`);
+      const response = await axios.get(`/cases`);
       console.log('Réponse brute de l\'API:', response.data);
       
       const casesWithFullImageUrls = response.data.map(caseItem => ({
@@ -239,7 +239,7 @@ function CasesPage() {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await axios.get(`${API_BASE_URL}/cases/${id}`);
+      const response = await axios.get(`/cases/${id}`);
       setSelectedCase(response.data);
       setCases(prevCases => prevCases.map(c => c._id === id ? response.data : c));
     } catch (error) {
@@ -281,7 +281,7 @@ function CasesPage() {
 
   const fetchFolderMainImage = useCallback(async (caseId, folder) => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/cases/${caseId}`);
+      const response = await axios.get(`/cases/${caseId}`);
       if (response.data && response.data.folderMainImages && response.data.folderMainImages[folder]) {
         // Construire l'URL complète en utilisant la structure correcte
         return `${process.env.REACT_APP_SPACES_URL}/cas_${caseId}/${folder}/folder-main-image/${response.data.folderMainImages[folder]}`;
@@ -351,7 +351,7 @@ function CasesPage() {
         });
         console.log('Réponse du serveur:', response.data);
       }
-      const updatedCase = await axios.get(`${API_BASE_URL}/cases/${selectedCase._id}`);
+      const updatedCase = await axios.get(`/cases/${selectedCase._id}`);
       setCases(prevCases => prevCases.map(c => c._id === selectedCase._id ? updatedCase.data : c));
       setSelectedCase(updatedCase.data);
       setNewImages({});
@@ -424,7 +424,7 @@ function CasesPage() {
     if (window.confirm(`Êtes-vous sûr de vouloir supprimer le dossier "${folder}" ?`)) {
       try {
         await axios.delete(`${API_BASE_URL}/cases/${selectedCase._id}/folders/${folder}`);
-        const updatedCase = await axios.get(`${API_BASE_URL}/cases/${selectedCase._id}`);
+        const updatedCase = await axios.get(`/cases/${selectedCase._id}`);
         setCases(prevCases => prevCases.map(c => c._id === selectedCase._id ? updatedCase.data : c));
         setSelectedCase(updatedCase.data);
       } catch (error) {
@@ -459,7 +459,7 @@ function CasesPage() {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await axios.get(`${API_BASE_URL}/cases/${selectedCase._id}/images`);
+      const response = await axios.get(`/cases/${selectedCase._id}/images`);
       setImageDetails(response.data);
       console.log('Détails des images:', response.data);
     } catch (error) {
@@ -477,7 +477,7 @@ function CasesPage() {
       await axios.delete(`${API_BASE_URL}/cases/${caseId}/images`, {
         data: { folder, fileName }
       });
-      const updatedCase = await axios.get(`${API_BASE_URL}/cases/${caseId}`);
+      const updatedCase = await axios.get(`/cases/${caseId}`);
       setCases(prevCases => prevCases.map(c => c._id === caseId ? updatedCase.data : c));
       setSelectedCase(updatedCase.data);
     } catch (error) {
