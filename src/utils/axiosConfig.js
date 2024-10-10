@@ -1,7 +1,11 @@
 import axios from 'axios';
 
+const baseURL = process.env.REACT_APP_API_URL || '/api'; // Utilisez REACT_APP_API_URL
+
+console.log('Axios baseURL:', baseURL); // Ajoutez cette ligne pour déboguer
+
 const axiosInstance = axios.create({
-  baseURL: '/api', // Chemin relatif pour les appels API
+  baseURL: baseURL,
 });
 
 axiosInstance.interceptors.request.use(
