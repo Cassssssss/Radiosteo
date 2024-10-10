@@ -41,7 +41,13 @@ if (process.env.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, 'build')));
   
   app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'build', 'index.html'));
+    if (req.path.startsWith('/api/')) {
+      // Si la route commence par /api/, renvoyer une erreur 404 JSON
+      res.status(404).json({ message: 'API route not found' });
+    } else {
+      // Sinon, renvoyer index.html pour les routes du frontend
+      res.sendFile(path.join(__dirname, 'build', 'index.html'));
+    }
   });
 }
 

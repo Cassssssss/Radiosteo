@@ -297,7 +297,7 @@ function CasesPage() {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await axios.post(`${API_BASE_URL}/cases`, { 
+      const response = await axios.post(`/cases`, { 
         title: newCaseTitle,
         folders: [],
         images: {},
